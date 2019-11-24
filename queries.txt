@@ -1,0 +1,34 @@
+R := inputfromfile(sales1) // import vertical bar delimited foo, first line
+// has column headers.
+// Suppose they are saleid|itemid|customerid|storeid|time|qty|pricerange
+// In general there can be more or fewer columns than this.
+R1 := select(R, (time > 50) or (qty < 30))
+// select * from R where time > 50 or qty < 30
+R2 := project(R1, saleid, qty, pricerange) // select saleid, qty, pricerange
+// from R1
+R3 := avg(R1, qty) // select avg(qty) from R1
+R4 := sumgroup(R1, time, qty) // select sum(time), qty from R1 group by qty
+R5 := sumgroup(R1, qty, time, pricerange) // select sum(qty), time,
+// pricerange from R1 group by time, pricerange
+R6 := avggroup(R1, qty, pricerange) // select avg(qty), pricerange
+// from R1 group by by pricerange
+S := inputfromfile(sales2) // suppose column headers are
+// saleid|I|C|S|T|Q|P
+T := join(R, S, R.customerid = S.C) // select * from R, S
+// where R.customerid = S.C
+T1 := join(R1, S, (R1.qty > S.Q) and (R1.saleid = S.saleid)) // select * from R1, S where
+T2 := sort(T1, S_C) // sort T1 by S_C
+T2prime := sort(T1, R1_time, S_C) // sort T1 by R_itemid, S_C (in that order)
+T3 := movavg(T2prime, R1_qty, 3) // perform the three item moving average of T2prime
+// on column R_qty. This will be as long as R_qty with the three way
+// moving average of 4 8 9 7 being 4 6 7 8
+T4 := movsum(T2prime, R1_qty, 5) // perform the five item moving sum of T2prime
+// on column R_qty
+Q1 := select(R, qty = 5) // select * from R where qty=5
+Btree(R, qty) // create an index on R based on column qty
+// Equality selections and joins on R should use the index.
+// All indexes will be on one column (both Btree and Hash)
+Q2 := select(R, qty = 5) // this should use the index
+Q3 := select(R, itemid = 7) // select * from R where itemid = 7
+Hash(R,itemid)
+Q4 := select(R, itemid = 7) // this should use the hash index

@@ -32,3 +32,8 @@ Q2 := select(R, qty = 5) // this should use the index
 Q3 := select(R, itemid = 7) // select * from R where itemid = 7
 Hash(R,itemid)
 Q4 := select(R, itemid = 7) // this should use the hash index
+Q5 := concat(Q4, Q2) // concatenate the two tables (must have the same schema)
+// Duplicate rows may result (though not with this example).
+outputtofile(Q5, Q5) // This should output the table Q5 into a file
+// with the same name and with vertical bar separators
+outputtofile(T, T) // This should output the table T

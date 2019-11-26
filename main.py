@@ -6,10 +6,9 @@ from table import *
 
 
 class Solution:
-    def __init__(self):
-        pass
 
-    def read_line(self, line):
+    @classmethod
+    def read_line(cls, line):
 
         line = Parser.remove_comments(line)
         if line:
@@ -19,64 +18,87 @@ class Solution:
 
                     if 'inputfromfile' in right:
                         inp_name = Parser.parse(right, 'input')
-                        exec(f'self.{left} = Table(left,inp_name)')
+                        setattr(cls, left, Table(left, inp_name))
 
                     elif 'select' in right:
                         base_table, args, condition = Parser.parse(
                             right, 'select')
-                        exec(
-                            f'self.{left} = self.{base_table}.select(args,condition,left)')
+
+                        output = getattr(cls,base_table).select(args,condition,left)
+                        setattr(cls, left, output)
 
                     elif 'project' in right:
                         base_table, args = Parser.parse(right, 'project')
-                        exec(
-                            f'self.{left} = self.{base_table}.project(args,left)')
+
+                        output = getattr(cls, base_table).project(args,left)
+                        setattr(cls, left, output)
 
                     elif 'avggroup' in right:
                         base_table, args = Parser.parse(right, 'project')
-                        exec(
-                            f'self.{left} = self.{base_table}.avg_sum_group(args,left)')
+
+                        output = getattr(cls, base_table).avg_sum_group(args,left)
+                        setattr(cls, left, output)
 
                     elif 'movavg' in right:
                         base_table, args = Parser.parse(right, 'project')
-                        exec(
-                            f'self.{left} = self.{base_table}.moving_avg_sum(args,left)')
+
+                        output = getattr(cls, base_table).moving_avg_sum(args,left)
+                        setattr(cls, left, output)
 
                     elif 'avg' in right:
                         base_table, args = Parser.parse(right, 'avg')
-                        exec(f'self.{left} = self.{base_table}.avg_sum(args)')
+
+                        output = getattr(cls, base_table).avg_sum(args)
+                        setattr(cls, left, output)
 
                     elif 'sumgroup' in right:
                         base_table, args = Parser.parse(right, 'project')
-                        exec(
-                            f'self.{left} = self.{base_table}.avg_sum_group(args,left,"sum")')
+
+                        output = getattr(cls, base_table).avg_sum_group(args, left, 'sum')
+                        setattr(cls, left, output)
 
                     elif 'movsum' in right:
                         base_table, args = Parser.parse(right, 'project')
-                        exec(
-                            f'self.{left} = self.{base_table}.moving_avg_sum(args,left,"sum")')
+
+                        output = getattr(cls, base_table).moving_avg_sum(args, left, 'sum')
+                        setattr(cls, left, output)
 
                     elif 'sum' in right:
                         base_table, args = Parser.parse(right, 'avg')
-                        exec(
-                            f'self.{left} = self.{base_table}.avg_sum(args,sum)')
+
+                        output = getattr(cls, base_table).avg_sum(args,sum)
+                        setattr(cls, left, output)
 
                     elif 'sort' in right:
                         base_table, args = Parser.parse(right, 'project')
-                        exec(
-                            f'self.{left} = self.{base_table}.sort(args,left)')
+
+                        output = getattr(cls,base_table).sort(args,left)
+                        setattr(cls, left, output)
 
                     elif 'join' in right:
-                        t1, t2, args, condition = Parser.parse(right, 'join')
-                        exec(
-                            f'self.{left} = Table.join(t1,t2,args,condition,left,{"self." + t1},{"self." + t2})')
+                        name1, name2, args, condition = Parser.parse(right, 'join')
+
+                        table1 = getattr(cls, name1)
+                        table2 = getattr(cls, name2)
+
+                        output = Table.join(name1,name2,args, condition, left, table1, table2)
+                        setattr(cls, left, output)
+
+                    elif 'concat' in right:
+                        args = Parser.parse(right,'concat')
+
+                        tables = []
+                        for a in args:
+                            tables.append(getattr(getattr(cls, a), 't'))
+                        output = Table.concat(tables, left)
+
+                        setattr(cls, left, output)
 
             print(line, '\nQuery took %.06f sec.\n' % t.interval)
 
 
 if __name__ == '__main__':
     query_file = 'queries.txt'
-    solution = Solution()
     with open(query_file, 'r') as f:
         for i, line in enumerate(f):
-            solution.read_line(line)
+            Solution.read_line(line)

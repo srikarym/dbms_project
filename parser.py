@@ -36,9 +36,7 @@ class Parser:
                 ('R', 'inputfromfile(sales1)')
 
         """
-        left, right = s.split(':=')
-        left = left.strip()
-        right = right.strip()
+        left, right = list(map(str.strip, s.split(':=')))
         return left, right
 
     @classmethod
@@ -57,7 +55,7 @@ class Parser:
                 'R1, saleid, qty, pricerange'
 
         """
-        s = s[s.find('(') + 1:s.find(')')]
+        s = s[s.find("(") + 1:s.rfind(")")]
         return s
 
     @classmethod
@@ -82,11 +80,11 @@ class Parser:
                 ('R1', 'qty')
 
         """
+        s = cls.remove_outer_paren(s)
         if call == 'input':
-            return cls.remove_outer_paren(s)
+            return s
 
         elif call == 'select':
-            s = s[s.find("(") + 1:s.rfind(")")]
             base_table, args = s.split(',')
             base_table = base_table.strip()
             args = args.strip()
@@ -100,23 +98,20 @@ class Parser:
             return base_table, args, condition
 
         elif call == 'project':
-            s = s[s.find("(") + 1:s.rfind(")")]
-            base_table, args = s.split(',')[0], s.split(',')[1:]
+            base_table, *args = s.split(',')
             base_table = base_table.strip()
             args = [a.strip() for a in args]
 
             return base_table, args
 
         elif call == 'avg':
-            s = s[s.find("(") + 1:s.rfind(")")]
-            base_table, args = s.split(',')[0], s.split(',')[1]
+            base_table, args = s.split(',')
             base_table = base_table.strip()
             args = args.strip()
             return base_table, args
 
         elif call == 'join':
-            s = s[s.find("(") + 1:s.rfind(")")]
-            t1, t2, args = s.split(',')[0], s.split(',')[1], s.split(',')[2:]
+            t1, t2, *args = s.split(',')
             t1 = t1.strip()
             t2 = t2.strip()
             args = [a.strip() for a in args]
@@ -128,6 +123,11 @@ class Parser:
             args = ','.join(args).split(condition)
             args = [cls.remove_outer_paren(s.strip()) for s in args]
             return t1, t2, args, condition
+
+        elif call == 'concat':
+            args = s.split(',')
+            args = [a.strip() for a in args]
+            return args
 
     @classmethod
     def npy_to_dict(cls, arr):

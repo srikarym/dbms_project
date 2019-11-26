@@ -50,6 +50,8 @@ class Table:
             conditions = ['self.t.' + arg for arg in conditions]
             indices = []
             for a in conditions:
+                if Table.find_operator(a) == '=':
+                    a = a.replace('=', '==')
                 i = eval(f'np.where({a})')
                 indices.append(i)
 
@@ -59,7 +61,9 @@ class Table:
                 indices = reduce(np.intersect1d, indices)
 
         else:
-            conditions = conditions.replace('=', '==')
+            if Table.find_operator(conditions) == '=':
+                conditions = conditions.replace('=', '==')
+
             conditions = 'self.t.' + conditions
             indices = eval(f'np.where({conditions})')
 
@@ -127,11 +131,9 @@ class Table:
                 R5 := R1.avg_sum_group( ['qty','time','percentage'] , 'R5','sum')
         """
 
-        ar1 = args[0]
-        ar_group = args[1:]
+        first, *rest = args
 
-        groups = [self.t[arg] for arg in ar_group]
-
+        groups = [self.t[arg] for arg in rest]
         groups = list(zip(*groups))
 
         d = defaultdict(list)
@@ -140,17 +142,17 @@ class Table:
 
         for k, ind in d.items():
             if operation == 'avg':
-                d[k] = np.mean(self.t[ar1][ind])
+                d[k] = np.mean(self.t[first][ind])
             else:
-                d[k] = np.sum(self.t[ar1][ind])
+                d[k] = np.sum(self.t[first][ind])
 
         d = OrderedDict(sorted(d.items()))
 
         new_table = defaultdict(list)
-        new_table[ar1] = np.array(list(d.values()))
+        new_table[first] = np.array(list(d.values()))
 
         for key_tuple in d.keys():
-            for arg, key in zip(ar_group, key_tuple):
+            for arg, key in zip(rest, key_tuple):
                 new_table[arg].append(key)
 
         new_table = Table(name, t=new_table)
@@ -169,8 +171,10 @@ class Table:
         Example:
                 T2prime := T1.sort(['R1_time', 'S_C'], 'T2prime')
         """
-        s = ','.join('self.t.' + a for a in args)
-        to_sort = eval(f'list(zip({s}))')
+
+        lis = [getattr(getattr(self,'t'),a) for a in args]
+        to_sort = list(zip(*lis))
+
         indices = Table.argsort(to_sort)
 
         new_table = {k: v[indices] for k, v in self.t.items()}
@@ -304,8 +308,9 @@ class Table:
 
         k1, k2 = list(d1.keys()), list(d2.keys())
 
-        exec(f'{name1} = t1.t')
-        exec(f'{name2} = t2.t')
+
+        vars()[name1] = d1
+        vars()[name2] = d2
 
         if bool_op:
             min_len = float('inf')
@@ -400,6 +405,25 @@ class Table:
         new_table = AttrDict(d_merged)
         new_table = Table(name, t=new_table)
         return new_table
+
+    @classmethod
+    def concat(cls,tables, name):
+
+        try:
+            assert len(set(tuple(t.keys()) for t in tables)) == 1
+
+        except AssertionError as error:
+            print('Tables must have the same schema to concatenate')
+
+        else:
+            d = {}
+            for k in tables[0]:
+                d[k] = np.concatenate(list(t[k] for t in tables))
+
+            new_table = AttrDict(d)
+            new_table = Table(name, t = new_table)
+            return new_table
+
 
     def __str__(self):
         """ Called by the str() function and by the print statement

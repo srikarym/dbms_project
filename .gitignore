@@ -1,3 +1,5 @@
 .idea/
 /.ipynb_checkpoints/
 /Output Files-20191124T164942Z-001/
+test.ipynb
+__pycache__/

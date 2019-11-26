@@ -3,32 +3,65 @@ from collections import *
 from parser import *
 import numpy as np
 
+
 class Table:
-	def __init__(self, table_name, inp_name=None, t=None):
+	"""Table.
+	Base class for a table. Contains various methods which are queries that can be done on the table
+	"""
+
+	def __init__(self, table_name, file_name=None, t=None):
+		"""Constructor.
+			Used to create a new table instance.
+
+			Args:
+				table_name (str): Name of the table
+				file_name(str): Create a table from input text file by passing file name
+				t (dict): Can also be created from an existing dictionary by passing as argument t
+				s (str): Input string
+
+			Returns:
+				Table() instance
+		"""
 		self.name = table_name
-		if inp_name:
-			arr = np.loadtxt(f"{inp_name}.txt", dtype=str, delimiter="|")
+		if file_name:
+			arr = np.loadtxt(f"{file_name}.txt", dtype=str, delimiter="|")
 			self.t = Parser.npy_to_dict(arr)
 		else:
 			self.t = t
 
-	def select(self, args, condition, name):
-		if condition:
-			args = ['self.t.' + arg for arg in args]
+	def select(self, conditions, bool_op, name):
+		"""Perform select operation on the table
+
+			Args:
+				conditions (str / list of str) : conditions to select
+				Ex: ['time > 50)' , '(qty < 30)']
+
+				bool_op (str): boolean operation separating conditions (and / or)
+							None if only one condition
+
+				name (str) : Name of new table
+			Returns:
+				new Table() instance after select
+
+			Example:
+				R1 = R.select( ['time > 50)' , '(qty < 30)'], 'or', 'R1')
+		"""
+		if bool_op:
+			conditions = ['self.t.' + arg for arg in conditions]
 			indices = []
-			for a in args:
+			for a in conditions:
 				i = eval(f'np.where({a})')
 				indices.append(i)
 
-			if condition == 'or':
+			if bool_op == 'or':
 				indices = reduce(np.union1d, indices)
 			else:
 				indices = reduce(np.intersect1d, indices)
 
 		else:
-			args = args.replace('=', '==')
-			args = 'self.t.' + args
-			indices = eval(f'np.where({args})')
+			conditions = conditions.replace('=', '==')
+			conditions = 'self.t.' + conditions
+			indices = eval(f'np.where({conditions})')
 
 		new_table = {k: v[indices] for k, v in self.t.items()}
 		new_table = AttrDict(new_table)
@@ -36,16 +69,43 @@ class Table:
 		new_table = Table(name, t=new_table)
 		return new_table
 
-	def project(self, args, name):
-		new_table = {k: self.t[k] for k in args}
+	def project(self, elements, name):
+
+		""" Perform project operation on the table
+
+			Args:
+				elements (str / list of str) : Columns to project from source table
+				Ex: ['saleid', 'qty', 'pricerange']
+
+				name (str) : Name of new table
+			Returns:
+				new Table() instance after project
+
+			Example:
+				R2 := R1.project( ['saleid', 'qty', 'pricerange'], 'R2')
+		"""
+		new_table = {k: self.t[k] for k in elements}
 		new_table = AttrDict(new_table)
 
 		new_table = Table(name, t=new_table)
 		return new_table
 
-	def avg_sum(self, args, operation='avg'):
+	def avg_sum(self, elements, operation='avg'):
 
-		arr = self.t[args]
+		""" Perform average / sum on the table
+
+			Args:
+				elements (str) : Source table Column to calculate average / sum
+				Ex: 'qty'
+
+			Returns:
+				Float - average / sum
+
+			Example:
+				R3 = R1.avg('qty')
+		"""
+
+		arr = self.t[elements]
 		if operation == 'sum':
 			ans = np.sum(arr)
 		else:
@@ -53,6 +113,22 @@ class Table:
 		return str(ans)
 
 	def avg_sum_group(self, args, name, operation='avg'):
+		""" Perform average / sum group on the table
+
+			Args:
+				args (str) : list of strings.
+							1st element - source table Column to calculate average / sum
+							rest of the list - columns to group by
+
+				Ex: ['qty','time','percentage']
+				name (str) : Name of new table
+			Returns:
+				new Table() instance after avg/sum group
+
+			Example:
+				R5 := R1.avg_sum_group( ['qty','time','percentage'] , 'R5','sum')
+		"""
+
 		ar1 = args[0]
 		ar_group = args[1:]
 
@@ -83,6 +159,18 @@ class Table:
 		return new_table
 
 	def sort(self, args, name):
+		""" Sort a table by columns
+
+			Args:
+				args (str) : list of strings to sort by
+				Ex: ['R1_time', 'S_C']
+				name (str) : Name of new table
+			Returns:
+				new Table() instance after sorting
+
+			Example:
+				T2prime := T1.sort(['R1_time', 'S_C'], 'T2prime')
+		"""
 		s = ','.join('self.t.' + a for a in args)
 		to_sort = eval(f'list(zip({s}))')
 		indices = Table.argsort(to_sort)
@@ -92,6 +180,20 @@ class Table:
 		return new_table
 
 	def moving_avg_sum(self, args, name, operation='avg'):
+		""" Perform moving average / sum on the table based on operation
+
+			Args:
+				elements (list) :
+						1st element: Source table Column to calculate average / sum
+						2nd element: window size (N)
+
+			Returns:
+				new Table() instance after moving average / sum
+
+			Example:
+				T3 := T2prime.moving_avg_sum( ['R1_qty', 3],'T3', 'avg')
+		"""
+
 		col, N = args
 
 		arr = self.t[col]
@@ -108,11 +210,38 @@ class Table:
 		return new_table
 
 	@staticmethod
-	def argsort(lis):
-		return sorted(range(len(lis)), key=lis.__getitem__)
+	def argsort(arr):
+		""" Returns the indices that would sort an array.
+			Also works on array of tuples
+
+			Args:
+				arr (list) : Array to sort.
+
+			Returns:
+				index_array : Array of indices that sort arr
+
+			Example:
+				x = [3,2,4,1,6]
+				>>Table.argsort(x)
+				[3, 1, 0, 2, 4]
+		"""
+		return sorted(range(len(arr)), key=arr.__getitem__)
 
 	@staticmethod
 	def find_operator(s):
+		""" Returns the operator in a string.
+
+			Args:
+				s (str) : Input string.
+
+			Returns:
+				string : Operator
+
+			Example:
+				s = 'A.col1 >= B.col2'
+				>>Table.find_operator(s)
+				'>='
+		"""
 		lis = ['==', '<=', '>=', '<', '>', '!=', '=']
 		for l in lis:
 			if l in s:
@@ -120,6 +249,21 @@ class Table:
 
 	@staticmethod
 	def moving_agg(x, N, operation='avg'):
+		""" Calculates the moving average / sum on an array.
+
+			Args:
+				x (list) : Input array of integers / float.
+				N (int) : Window size
+
+			Returns:
+				list : Moving averages / sums
+
+			Example:
+				arr = [4, 8, 9, 7]
+				>>Table.moving_agg(arr)
+				[4,6,7,8]
+		"""
+
 		ar = deque([])
 		res = []
 		for n in x:
@@ -132,8 +276,33 @@ class Table:
 				res.append(np.sum(ar))
 		return res
 
-	@staticmethod
-	def join(name1, name2, args, condition, name, t1, t2):
+	@classmethod
+	def join(cls,name1, name2, args, bool_op, name, t1, t2):
+
+		""" Joins two tables based on conditions
+
+			Args:
+				name1 (str) : Name of table1
+				name2 (str) : Name of table2
+
+				args (str / list of str): Conditions on table columns
+				Ex: ['(R1.qty > S.Q)' , ' (R1.saleid = S.saleid)']
+
+				bool_op (str): boolean operation separating conditions (usually and)
+							None if only one condition is present
+
+				name (str): Name of output table
+
+				t1 (Table) : table1 instance
+				t2 (Table) : table2 instance
+
+			Returns:
+				new Table() instance after moving average / sum
+
+			Example:
+				T1 := Table.join('R1', 'S', ['(R1.qty > S.Q)' , ' (R1.saleid = S.saleid)'] ,
+									'T1', R1, S)
+		"""
 		d1, d2 = t1.t, t2.t
 
 		k1, k2 = list(d1.keys()), list(d2.keys())
@@ -141,7 +310,7 @@ class Table:
 		exec(f'{name1} = t1.t')
 		exec(f'{name2} = t2.t')
 
-		if condition:
+		if bool_op:
 			min_len = float('inf')
 			min_index = -1
 			min_lis = []
@@ -150,7 +319,7 @@ class Table:
 
 				lhs = ''
 				rhs = ''
-				if Table.find_operator(s) == '=':
+				if cls.find_operator(s) == '=':
 					s = s.replace('=', '==')
 
 				for key in k1:
@@ -165,7 +334,7 @@ class Table:
 						rhs = sub
 						break
 
-				op = Table.find_operator(s)
+				op = cls.find_operator(s)
 				s = f'xx {op} yy'
 
 				xx, yy = eval(f'np.meshgrid({lhs}, {rhs}, sparse=False, indexing="ij")')
@@ -219,7 +388,7 @@ class Table:
 				if sub in s:
 					rhs = sub
 
-			op = Table.find_operator(s)
+			op = cls.find_operator(s)
 			s = f'xx {op} yy'
 
 			xx, yy = eval(f'np.meshgrid({lhs}, {rhs}, sparse=False, indexing="ij")')
@@ -234,6 +403,29 @@ class Table:
 		return new_table
 
 	def __str__(self):
+
+		""" Called by the str() function and by the print statement
+			to compute the “informal” string representation of a Table object
+
+			Each row has left aligned elements and rows are separated by \n newline
+
+			Returns:
+				string : string representation of the object
+
+			Example:
+				d = {'Name': array(['a', 'c', 'e'], dtype='<U4'),
+				 'ID': array([0, 1, 2]),
+				 'Qty': array([12, 15, 13])}
+
+				table1 = Table(name = 'sample', t = d)
+
+				print(table1)
+
+				a  0  12
+				c  1  15
+				e  2  13
+
+			"""
 		keys = list(self.t.keys())
 		s = ''
 		n = len(self.t[keys[0]])
@@ -253,4 +445,6 @@ class Table:
 		return s
 
 	def __repr__(self):
+		#Same as __str__()
+
 		return self.__str__()

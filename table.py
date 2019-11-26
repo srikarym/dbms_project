@@ -11,16 +11,16 @@ class Table:
 
 	def __init__(self, table_name, file_name=None, t=None):
 		"""Constructor.
-			Used to create a new table instance.
+		Used to create a new table instance.
 
-			Args:
-				table_name (str): Name of the table
-				file_name(str): Create a table from input text file by passing file name
-				t (dict): Can also be created from an existing dictionary by passing as argument t
-				s (str): Input string
+		Args:
+			table_name (str): Name of the table
+			file_name(str): Create a table from input text file by passing file name
+			t (dict): Can also be created from an existing dictionary by passing as argument t
+			s (str): Input string
 
-			Returns:
-				Table() instance
+		Returns:
+			Table() instance
 		"""
 		self.name = table_name
 		if file_name:
@@ -32,19 +32,19 @@ class Table:
 	def select(self, conditions, bool_op, name):
 		"""Perform select operation on the table
 
-			Args:
-				conditions (str / list of str) : conditions to select
-				Ex: ['time > 50)' , '(qty < 30)']
+		Args:
+			conditions (str / list of str) : conditions to select
+			Ex: ['time > 50)' , '(qty < 30)']
 
-				bool_op (str): boolean operation separating conditions (and / or)
-							None if only one condition
+			bool_op (str): boolean operation separating conditions (and / or)
+						None if only one condition
 
-				name (str) : Name of new table
-			Returns:
-				new Table() instance after select
+			name (str) : Name of new table
+		Returns:
+			new Table() instance after select
 
-			Example:
-				R1 = R.select( ['time > 50)' , '(qty < 30)'], 'or', 'R1')
+		Example:
+			R1 = R.select( ['time > 50)' , '(qty < 30)'], 'or', 'R1')
 		"""
 		if bool_op:
 			conditions = ['self.t.' + arg for arg in conditions]
@@ -73,16 +73,16 @@ class Table:
 
 		""" Perform project operation on the table
 
-			Args:
-				elements (str / list of str) : Columns to project from source table
-				Ex: ['saleid', 'qty', 'pricerange']
+		Args:
+			elements (str / list of str) : Columns to project from source table
+			Ex: ['saleid', 'qty', 'pricerange']
 
-				name (str) : Name of new table
-			Returns:
-				new Table() instance after project
+			name (str) : Name of new table
+		Returns:
+			new Table() instance after project
 
-			Example:
-				R2 := R1.project( ['saleid', 'qty', 'pricerange'], 'R2')
+		Example:
+			R2 := R1.project( ['saleid', 'qty', 'pricerange'], 'R2')
 		"""
 		new_table = {k: self.t[k] for k in elements}
 		new_table = AttrDict(new_table)
@@ -94,15 +94,15 @@ class Table:
 
 		""" Perform average / sum on the table
 
-			Args:
-				elements (str) : Source table Column to calculate average / sum
-				Ex: 'qty'
+		Args:
+			elements (str) : Source table Column to calculate average / sum
+			Ex: 'qty'
 
-			Returns:
-				Float - average / sum
+		Returns:
+			Float - average / sum
 
-			Example:
-				R3 = R1.avg('qty')
+		Example:
+			R3 = R1.avg('qty')
 		"""
 
 		arr = self.t[elements]
@@ -115,18 +115,18 @@ class Table:
 	def avg_sum_group(self, args, name, operation='avg'):
 		""" Perform average / sum group on the table
 
-			Args:
-				args (str) : list of strings.
-							1st element - source table Column to calculate average / sum
-							rest of the list - columns to group by
+		Args:
+			args (str) : list of strings.
+						1st element - source table Column to calculate average / sum
+						rest of the list - columns to group by
 
-				Ex: ['qty','time','percentage']
-				name (str) : Name of new table
-			Returns:
-				new Table() instance after avg/sum group
+			Ex: ['qty','time','percentage']
+			name (str) : Name of new table
+		Returns:
+			new Table() instance after avg/sum group
 
-			Example:
-				R5 := R1.avg_sum_group( ['qty','time','percentage'] , 'R5','sum')
+		Example:
+			R5 := R1.avg_sum_group( ['qty','time','percentage'] , 'R5','sum')
 		"""
 
 		ar1 = args[0]
@@ -161,15 +161,15 @@ class Table:
 	def sort(self, args, name):
 		""" Sort a table by columns
 
-			Args:
-				args (str) : list of strings to sort by
-				Ex: ['R1_time', 'S_C']
-				name (str) : Name of new table
-			Returns:
-				new Table() instance after sorting
+		Args:
+			args (str) : list of strings to sort by
+			Ex: ['R1_time', 'S_C']
+			name (str) : Name of new table
+		Returns:
+			new Table() instance after sorting
 
-			Example:
-				T2prime := T1.sort(['R1_time', 'S_C'], 'T2prime')
+		Example:
+			T2prime := T1.sort(['R1_time', 'S_C'], 'T2prime')
 		"""
 		s = ','.join('self.t.' + a for a in args)
 		to_sort = eval(f'list(zip({s}))')
@@ -182,16 +182,16 @@ class Table:
 	def moving_avg_sum(self, args, name, operation='avg'):
 		""" Perform moving average / sum on the table based on operation
 
-			Args:
-				elements (list) :
-						1st element: Source table Column to calculate average / sum
-						2nd element: window size (N)
+		Args:
+			elements (list) :
+					1st element: Source table Column to calculate average / sum
+					2nd element: window size (N)
 
-			Returns:
-				new Table() instance after moving average / sum
+		Returns:
+			new Table() instance after moving average / sum
 
-			Example:
-				T3 := T2prime.moving_avg_sum( ['R1_qty', 3],'T3', 'avg')
+		Example:
+			T3 := T2prime.moving_avg_sum( ['R1_qty', 3],'T3', 'avg')
 		"""
 
 		col, N = args
@@ -212,18 +212,18 @@ class Table:
 	@staticmethod
 	def argsort(arr):
 		""" Returns the indices that would sort an array.
-			Also works on array of tuples
+		Also works on array of tuples
 
-			Args:
-				arr (list) : Array to sort.
+		Args:
+			arr (list) : Array to sort.
 
-			Returns:
-				index_array : Array of indices that sort arr
+		Returns:
+			index_array : Array of indices that sort arr
 
-			Example:
-				x = [3,2,4,1,6]
-				>>Table.argsort(x)
-				[3, 1, 0, 2, 4]
+		Example:
+			x = [3,2,4,1,6]
+			>>Table.argsort(x)
+			[3, 1, 0, 2, 4]
 		"""
 		return sorted(range(len(arr)), key=arr.__getitem__)
 
@@ -231,16 +231,16 @@ class Table:
 	def find_operator(s):
 		""" Returns the operator in a string.
 
-			Args:
-				s (str) : Input string.
+		Args:
+			s (str) : Input string.
 
-			Returns:
-				string : Operator
+		Returns:
+			string : Operator
 
-			Example:
-				s = 'A.col1 >= B.col2'
-				>>Table.find_operator(s)
-				'>='
+		Example:
+			s = 'A.col1 >= B.col2'
+			>>Table.find_operator(s)
+			'>='
 		"""
 		lis = ['==', '<=', '>=', '<', '>', '!=', '=']
 		for l in lis:
@@ -281,26 +281,26 @@ class Table:
 
 		""" Joins two tables based on conditions
 
-			Args:
-				name1 (str) : Name of table1
-				name2 (str) : Name of table2
+		Args:
+			name1 (str) : Name of table1
+			name2 (str) : Name of table2
 
-				args (str / list of str): Conditions on table columns
-				Ex: ['(R1.qty > S.Q)' , ' (R1.saleid = S.saleid)']
+			args (str / list of str): Conditions on table columns
+			Ex: ['(R1.qty > S.Q)' , ' (R1.saleid = S.saleid)']
 
-				bool_op (str): boolean operation separating conditions (usually and)
-							None if only one condition is present
+			bool_op (str): boolean operation separating conditions (usually and)
+						None if only one condition is present
 
-				name (str): Name of output table
+			name (str): Name of output table
 
-				t1 (Table) : table1 instance
-				t2 (Table) : table2 instance
+			t1 (Table) : table1 instance
+			t2 (Table) : table2 instance
 
-			Returns:
-				new Table() instance after moving average / sum
+		Returns:
+			new Table() instance after moving average / sum
 
-			Example:
-				T1 := Table.join('R1', 'S', ['(R1.qty > S.Q)' , ' (R1.saleid = S.saleid)'] ,
+		Example:
+			T1 := Table.join('R1', 'S', ['(R1.qty > S.Q)' , ' (R1.saleid = S.saleid)'] ,
 									'T1', R1, S)
 		"""
 		d1, d2 = t1.t, t2.t
@@ -405,27 +405,27 @@ class Table:
 	def __str__(self):
 
 		""" Called by the str() function and by the print statement
-			to compute the “informal” string representation of a Table object
+		to compute the “informal” string representation of a Table object
 
-			Each row has left aligned elements and rows are separated by \n newline
+		Each row has left aligned elements and rows are separated by \n newline
 
-			Returns:
-				string : string representation of the object
+		Returns:
+			string : string representation of the object
 
-			Example:
-				d = {'Name': array(['a', 'c', 'e'], dtype='<U4'),
-				 'ID': array([0, 1, 2]),
-				 'Qty': array([12, 15, 13])}
+		Example:
+			d = {'Name': array(['a', 'c', 'e'], dtype='<U4'),
+			 'ID': array([0, 1, 2]),
+			 'Qty': array([12, 15, 13])}
 
-				table1 = Table(name = 'sample', t = d)
+			table1 = Table(name = 'sample', t = d)
 
-				print(table1)
+			print(table1)
 
-				a  0  12
-				c  1  15
-				e  2  13
+			a  0  12
+			c  1  15
+			e  2  13
 
-			"""
+		"""
 		keys = list(self.t.keys())
 		s = ''
 		n = len(self.t[keys[0]])

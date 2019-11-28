@@ -256,6 +256,8 @@ class Table:
         new_table = Table(name, t=new_table)
         return new_table
 
+
+
     def moving_avg_sum(self, args, name, operation='avg'):
         """ Perform moving average / sum on the table based on operation
 
@@ -399,6 +401,22 @@ class Table:
                 res.append(np.sum(ar))
         return res
 
+    def reduce_str(self,s):
+        arith_op = Table.find_operator(s)
+        if arith_op is None:
+            return self.t[s.split('.')[1]]
+        else:
+            lhs,rhs = list(map(str.strip, s.split(arith_op)))
+            try:
+                float(rhs)
+            except:
+                lhs,rhs = rhs,lhs
+            arr = self.t[lhs.split('.')[1]]
+
+            op_fun = Table.get_operator_fn(arith_op)
+            return op_fun(arr, float(rhs))
+
+
     @classmethod
     def join(cls, name1, name2, args, bool_op, name, t1, t2):
         """ Joins two tables based on conditions
@@ -441,27 +459,23 @@ class Table:
 
                 lhs = ''
                 rhs = ''
+
                 if cls.find_operator(s) == '=':
                     s = s.replace('=', '==')
 
-                for key in k1:
-                    sub = f'{name1}.{key}'
-                    if sub in s:
-                        lhs = sub
-                        break
+                op_str = cls.find_operator(s)
 
-                for key in k2:
-                    sub = f'{name2}.{key}'
-                    if sub in s:
-                        rhs = sub
-                        break
+                lhs,rhs = list(map(str.strip , s.split(op_str)))
 
-                op = cls.find_operator(s)
-                s = f'xx {op} yy'
+                left_arr = t1.reduce_str(lhs)
+                right_arr = t2.reduce_str(rhs)
 
-                xx, yy = eval(
-                    f'np.meshgrid({lhs}, {rhs}, sparse=False, indexing="ij")')
-                ind1, ind2 = eval(f'np.where({s})')
+                op_fun = cls.get_operator_fn(op_str)
+
+                xx,yy = np.meshgrid(left_arr, right_arr, sparse=False, indexing='ij')
+
+                ind1, ind2 = np.where(op_fun(xx,yy))
+
 
                 if len(ind1) < min_len:
                     min_len = len(ind1)
@@ -470,21 +484,18 @@ class Table:
 
             for i, s in enumerate(args):
                 if i != min_index:
-                    for key in k1:
-                        sub = f'{name1}.{key}'
-                        if sub in s:
-                            s = s.replace(sub, sub + '[m]')
-                            break
+                    op_str = cls.find_operator(s)
+                    lhs, rhs = list(map(str.strip, s.split(op_str)))
 
-                    for key in k2:
-                        sub = f'{name2}.{key}'
-                        if sub in s:
-                            s = s.replace(sub, sub + '[n]')
-                            break
+                    left_arr = t1.reduce_str(lhs)
+                    right_arr = t2.reduce_str(rhs)
+
+                    op_fun = cls.get_operator_fn(op_str)
+
                     ind1 = []
                     ind2 = []
                     for m, n in zip(*min_lis):
-                        if eval(s):
+                        if op_fun(left_arr[m], right_arr[n]):
                             ind1.append(m)
                             ind2.append(n)
                     min_lis = [ind1, ind2]
@@ -497,26 +508,17 @@ class Table:
             if '=' in s and ('<' not in s and '>' not in s):
                 s = s.replace('=', '==')
 
-            lhs = ''
-            rhs = ''
+            op_str = cls.find_operator(s)
+            lhs, rhs = list(map(str.strip, s.split(op_str)))
 
-            for key in k1:
-                sub = f'{name1}.{key}'
-                if sub in s:
-                    lhs = sub
-                    break
+            left_arr = t1.reduce_str(lhs)
+            right_arr = t2.reduce_str(rhs)
 
-            for key in k2:
-                sub = f'{name2}.{key}'
-                if sub in s:
-                    rhs = sub
+            op_fun = cls.get_operator_fn(op_str)
 
-            op = cls.find_operator(s)
-            s = f'xx {op} yy'
+            xx, yy = np.meshgrid(left_arr, right_arr, sparse=False, indexing='ij')
 
-            xx, yy = eval(
-                f'np.meshgrid({lhs}, {rhs}, sparse=False, indexing="ij")')
-            indices1, indices2 = eval(f'np.where({s})')
+            indices1, indices2 = np.where(op_fun(xx, yy))
 
         d1 = {f'{name1}_{k}': v[indices1] for k, v in d1.items()}
         d2 = {f'{name2}_{k}': v[indices2] for k, v in d2.items()}

@@ -129,6 +129,11 @@ class Parser:
             args = [a.strip() for a in args]
             return args
 
+        elif call == 'Btree':
+            args = s.split(',')
+            args = [a.strip() for a in args]
+            return args[0],args[1]
+
     @classmethod
     def npy_to_dict(cls, arr):
         """Converts 2d numpy array to dictionary

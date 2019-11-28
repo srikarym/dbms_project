@@ -1,6 +1,6 @@
 import os
 import sys
-from parser import *
+from myparser import *
 from utils import *
 from table import *
 
@@ -93,6 +93,17 @@ class Solution:
                         output = Table.concat(tables, left)
 
                         setattr(cls, left, output)
+
+                else:
+                    if line.startswith('Btree'):
+                        base_table, col = Parser.parse(line, 'Btree')
+                        table = getattr(cls, base_table)
+                        table.index_btree(col)
+
+                    elif line.startswith('Hash'):
+                        base_table, col = Parser.parse(line, 'Btree')
+                        table = getattr(cls, base_table)
+                        table.index_hash(col)
 
             print(line, '\nQuery took %.06f sec.\n' % t.interval)
 

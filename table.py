@@ -1,9 +1,9 @@
 from functools import reduce
 from collections import *
-from parser import *
+from myparser import *
 import numpy as np
-
-
+from BTrees.OOBTree import OOBTree
+import operator
 class Table:
     """Table.
     Base class for a table. Contains various methods which are queries that can be done on the table
@@ -23,11 +23,84 @@ class Table:
                 Table() instance
         """
         self.name = table_name
+
+        self.btrees = {}
+        self.hashtables = {}
+
         if file_name:
             arr = np.loadtxt(f"{file_name}.txt", dtype=str, delimiter="|")
             self.t = Parser.npy_to_dict(arr)
         else:
             self.t = t
+
+
+
+    def get_select_indices(self,s):
+        op_str = Table.find_operator(s)
+        lhs,rhs = list(map(str.strip, s.split(op_str)))
+
+        try:
+            float(rhs)
+        except:
+            lhs,rhs = rhs,lhs
+
+        keys = list(self.t.keys())
+
+        col_str = ''
+
+        for k in keys:
+            if k in lhs:
+                col_str = k
+                break
+
+        arith_op = Table.find_operator(lhs)
+        if arith_op is not None:
+            _, n = lhs.split(arith_op)
+            rev_op = Table.get_reverse_op(arith_op)
+            rhs = float(rev_op(float(rhs), float(n)))
+        else:
+            rhs = float(rhs)
+
+        col = self.t[col_str]
+        if col_str not in self.btrees and col_str not in self.hashtables:
+            main_op = Table.get_operator_fn(op_str)
+
+            ind = []
+            for i,n in enumerate(col):
+                if main_op(n,rhs):
+                    ind.append(i)
+            return ind
+
+        elif col_str in self.btrees:
+            bt = self.btrees[col_str]
+            ind = []
+            min_key = bt.minKey()
+
+            if op_str == '==':
+                return bt[rhs]
+
+            elif op_str == '>':
+                ind = bt.values(rhs + 0.00001)
+            elif op_str == '>=':
+                ind = bt.values(rhs)
+            elif op_str == '<':
+                ind = bt.values(min_key, rhs - 0.00001)
+            elif op_str == '<=':
+                ind = bt.values(min_key, rhs)
+            elif op_str == '!=':
+                ind = [bt[k] for k in (list(bt.keys())) if k != rhs]
+
+            return np.concatenate(ind)
+        else:
+            ht = self.hashtables[col_str]
+
+            if op_str == '==':
+                return ht[rhs]
+            else:
+                main_op = Table.get_operator_fn(op_str)
+                ind = [v for k,v in ht.items() if main_op(k,rhs)]
+            return np.concatenate(ind)
+
 
     def select(self, conditions, bool_op, name):
         """Perform select operation on the table
@@ -52,7 +125,9 @@ class Table:
             for a in conditions:
                 if Table.find_operator(a) == '=':
                     a = a.replace('=', '==')
-                i = eval(f'np.where({a})')
+
+                i = self.get_select_indices(a)
+                # i = eval(f'np.where({a})')
                 indices.append(i)
 
             if bool_op == 'or':
@@ -65,7 +140,8 @@ class Table:
                 conditions = conditions.replace('=', '==')
 
             conditions = 'self.t.' + conditions
-            indices = eval(f'np.where({conditions})')
+            indices = self.get_select_indices(conditions)
+            # indices = eval(f'np.where({conditions})')
 
         new_table = {k: v[indices] for k, v in self.t.items()}
         new_table = AttrDict(new_table)
@@ -211,6 +287,24 @@ class Table:
         new_table = Table(name, t=new_table)
         return new_table
 
+    def index_btree(self,col_name):
+        col = self.t[col_name]
+        unique = defaultdict(list)
+
+        for i,n in enumerate(col):
+            unique[n].append(i)
+        bt = OOBTree()
+        bt.update(unique)
+        self.btrees[col_name] = bt
+
+    def index_hash(self,col_name):
+        col = self.t[col_name]
+        unique = defaultdict(list)
+        for i,n in enumerate(col):
+            unique[n].append(i)
+
+        self.hashtables[col_name] = unique
+
     @staticmethod
     def argsort(arr):
         """ Returns the indices that would sort an array.
@@ -228,6 +322,29 @@ class Table:
                 [3, 1, 0, 2, 4]
         """
         return sorted(range(len(arr)), key=arr.__getitem__)
+
+    @staticmethod
+    def get_operator_fn(op):
+        return {
+            '+': operator.add,
+            '-': operator.sub,
+            '*': operator.mul,
+            '/': operator.itruediv,
+            '==': operator.eq,
+            '>': operator.gt,
+            '<':operator.lt,
+            '>=':operator.ge,
+            '<=':operator.le
+        }[op]
+
+    @staticmethod
+    def get_reverse_op(op):
+        return {
+            '-': operator.add,
+            '+': operator.sub,
+            '/': operator.mul,
+            '*': operator.itruediv,
+            }[op]
 
     @staticmethod
     def find_operator(s):
@@ -248,6 +365,11 @@ class Table:
         for l in lis:
             if l in s:
                 return l
+        lis_arith = ['+','-','*','/']
+        for l in lis_arith:
+            if l in s:
+                return l
+        return None
 
     @staticmethod
     def moving_agg(x, N, operation='avg'):

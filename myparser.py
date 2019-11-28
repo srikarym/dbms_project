@@ -132,7 +132,7 @@ class Parser:
         elif call == 'Btree':
             args = s.split(',')
             args = [a.strip() for a in args]
-            return args[0],args[1]
+            return args[0], args[1]
 
     @classmethod
     def npy_to_dict(cls, arr):

@@ -4,6 +4,8 @@ from myparser import *
 import numpy as np
 from BTrees.OOBTree import OOBTree
 import operator
+
+
 class Table:
     """Table.
     Base class for a table. Contains various methods which are queries that can be done on the table
@@ -33,16 +35,14 @@ class Table:
         else:
             self.t = t
 
-
-
-    def get_select_indices(self,s):
+    def get_select_indices(self, s):
         op_str = Table.find_operator(s)
-        lhs,rhs = list(map(str.strip, s.split(op_str)))
+        lhs, rhs = list(map(str.strip, s.split(op_str)))
 
         try:
             float(rhs)
-        except:
-            lhs,rhs = rhs,lhs
+        except BaseException:
+            lhs, rhs = rhs, lhs
 
         keys = list(self.t.keys())
 
@@ -66,8 +66,8 @@ class Table:
             main_op = Table.get_operator_fn(op_str)
 
             ind = []
-            for i,n in enumerate(col):
-                if main_op(n,rhs):
+            for i, n in enumerate(col):
+                if main_op(n, rhs):
                     ind.append(i)
             return ind
 
@@ -98,9 +98,8 @@ class Table:
                 return ht[rhs]
             else:
                 main_op = Table.get_operator_fn(op_str)
-                ind = [v for k,v in ht.items() if main_op(k,rhs)]
+                ind = [v for k, v in ht.items() if main_op(k, rhs)]
             return np.concatenate(ind)
-
 
     def select(self, conditions, bool_op, name):
         """Perform select operation on the table
@@ -248,7 +247,7 @@ class Table:
                 T2prime := T1.sort(['R1_time', 'S_C'], 'T2prime')
         """
 
-        lis = [getattr(getattr(self,'t'),a) for a in args]
+        lis = [getattr(getattr(self, 't'), a) for a in args]
         to_sort = list(zip(*lis))
 
         indices = Table.argsort(to_sort)
@@ -287,20 +286,20 @@ class Table:
         new_table = Table(name, t=new_table)
         return new_table
 
-    def index_btree(self,col_name):
+    def index_btree(self, col_name):
         col = self.t[col_name]
         unique = defaultdict(list)
 
-        for i,n in enumerate(col):
+        for i, n in enumerate(col):
             unique[n].append(i)
         bt = OOBTree()
         bt.update(unique)
         self.btrees[col_name] = bt
 
-    def index_hash(self,col_name):
+    def index_hash(self, col_name):
         col = self.t[col_name]
         unique = defaultdict(list)
-        for i,n in enumerate(col):
+        for i, n in enumerate(col):
             unique[n].append(i)
 
         self.hashtables[col_name] = unique
@@ -332,9 +331,9 @@ class Table:
             '/': operator.itruediv,
             '==': operator.eq,
             '>': operator.gt,
-            '<':operator.lt,
-            '>=':operator.ge,
-            '<=':operator.le
+            '<': operator.lt,
+            '>=': operator.ge,
+            '<=': operator.le
         }[op]
 
     @staticmethod
@@ -344,7 +343,7 @@ class Table:
             '+': operator.sub,
             '/': operator.mul,
             '*': operator.itruediv,
-            }[op]
+        }[op]
 
     @staticmethod
     def find_operator(s):
@@ -365,7 +364,7 @@ class Table:
         for l in lis:
             if l in s:
                 return l
-        lis_arith = ['+','-','*','/']
+        lis_arith = ['+', '-', '*', '/']
         for l in lis_arith:
             if l in s:
                 return l
@@ -429,7 +428,6 @@ class Table:
         d1, d2 = t1.t, t2.t
 
         k1, k2 = list(d1.keys()), list(d2.keys())
-
 
         vars()[name1] = d1
         vars()[name2] = d2
@@ -529,7 +527,7 @@ class Table:
         return new_table
 
     @classmethod
-    def concat(cls,tables, name):
+    def concat(cls, tables, name):
 
         try:
             assert len(set(tuple(t.keys()) for t in tables)) == 1
@@ -543,9 +541,8 @@ class Table:
                 d[k] = np.concatenate(list(t[k] for t in tables))
 
             new_table = AttrDict(d)
-            new_table = Table(name, t = new_table)
+            new_table = Table(name, t=new_table)
             return new_table
-
 
     def __str__(self):
         """ Called by the str() function and by the print statement

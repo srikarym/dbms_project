@@ -4,6 +4,7 @@ from myparser import *
 import numpy as np
 from BTrees.OOBTree import OOBTree
 import operator
+from copy import deepcopy
 
 
 class Table:
@@ -16,13 +17,13 @@ class Table:
         Used to create a new table instance.
 
         Args:
-                table_name (str): Name of the table
-                file_name(str): Create a table from input text file by passing file name
-                t (dict): Can also be created from an existing dictionary by passing as argument t
-                s (str): Input string
+                        table_name (str): Name of the table
+                        file_name(str): Create a table from input text file by passing file name
+                        t (dict): Can also be created from an existing dictionary by passing as argument t
+                        s (str): Input string
 
         Returns:
-                Table() instance
+                        Table() instance
         """
         self.name = table_name
 
@@ -36,6 +37,18 @@ class Table:
             self.t = t
 
     def get_select_indices(self, s):
+        """ Returns indices of a column based on a condition
+                Uses btree / hash indexing if available
+
+        Args:
+                s (str): Condition on a table column
+
+                Ex: 'qty < 30'
+
+        Returns:
+                        arr: indices of column which satisfy the condition
+        """
+
         op_str = Table.find_operator(s)
         lhs, rhs = list(map(str.strip, s.split(op_str)))
 
@@ -80,11 +93,11 @@ class Table:
                 return bt[rhs]
 
             elif op_str == '>':
-                ind = bt.values(rhs + 0.00001)
+                ind = bt.values(rhs + 1e-10)
             elif op_str == '>=':
                 ind = bt.values(rhs)
             elif op_str == '<':
-                ind = bt.values(min_key, rhs - 0.00001)
+                ind = bt.values(min_key, rhs - 1e-10)
             elif op_str == '<=':
                 ind = bt.values(min_key, rhs)
             elif op_str == '!=':
@@ -105,18 +118,18 @@ class Table:
         """Perform select operation on the table
 
         Args:
-                conditions (str / list of str) : conditions to select
-                Ex: ['time > 50)' , '(qty < 30)']
+                        conditions (str / list of str) : conditions to select
+                        Ex: ['time > 50' , 'qty < 30']
 
-                bool_op (str): boolean operation separating conditions (and / or)
-                                        None if only one condition
+                        bool_op (str): boolean operation separating conditions (and / or)
+                                                                        None if only one condition
 
-                name (str) : Name of new table
+                        name (str) : Name of new table
         Returns:
-                new Table() instance after select
+                        new Table() instance after select
 
         Example:
-                R1 = R.select( ['time > 50)' , '(qty < 30)'], 'or', 'R1')
+                        R1 = R.select( ['time > 50' , 'qty < 30'], 'or', 'R1')
         """
         if bool_op:
             conditions = ['self.t.' + arg for arg in conditions]
@@ -152,15 +165,15 @@ class Table:
         """ Perform project operation on the table
 
         Args:
-                elements (str / list of str) : Columns to project from source table
-                Ex: ['saleid', 'qty', 'pricerange']
+                        elements (str / list of str) : Columns to project from source table
+                        Ex: ['saleid', 'qty', 'pricerange']
 
-                name (str) : Name of new table
+                        name (str) : Name of new table
         Returns:
-                new Table() instance after project
+                        new Table() instance after project
 
         Example:
-                R2 := R1.project( ['saleid', 'qty', 'pricerange'], 'R2')
+                        R2 := R1.project( ['saleid', 'qty', 'pricerange'], 'R2')
         """
         new_table = {k: self.t[k] for k in elements}
         new_table = AttrDict(new_table)
@@ -172,14 +185,14 @@ class Table:
         """ Perform average / sum on the table
 
         Args:
-                elements (str) : Source table Column to calculate average / sum
-                Ex: 'qty'
+                        elements (str) : Source table Column to calculate average / sum
+                        Ex: 'qty'
 
         Returns:
-                Float - average / sum
+                        Float - average / sum
 
         Example:
-                R3 = R1.avg('qty')
+                        R3 = R1.avg('qty')
         """
 
         arr = self.t[elements]
@@ -193,17 +206,17 @@ class Table:
         """ Perform average / sum group on the table
 
         Args:
-                args (str) : list of strings.
-                                        1st element - source table Column to calculate average / sum
-                                        rest of the list - columns to group by
+                        args (str) : list of strings.
+                                                                        1st element - source table Column to calculate average / sum
+                                                                        rest of the list - columns to group by
 
-                Ex: ['qty','time','percentage']
-                name (str) : Name of new table
+                        Ex: ['qty','time','percentage']
+                        name (str) : Name of new table
         Returns:
-                new Table() instance after avg/sum group
+                        new Table() instance after avg/sum group
 
         Example:
-                R5 := R1.avg_sum_group( ['qty','time','percentage'] , 'R5','sum')
+                        R5 := R1.avg_sum_group( ['qty','time','percentage'] , 'R5','sum')
         """
 
         first, *rest = args
@@ -237,14 +250,14 @@ class Table:
         """ Sort a table by columns
 
         Args:
-                args (str) : list of strings to sort by
-                Ex: ['R1_time', 'S_C']
-                name (str) : Name of new table
+                        args (str) : list of strings to sort by
+                        Ex: ['R1_time', 'S_C']
+                        name (str) : Name of new table
         Returns:
-                new Table() instance after sorting
+                        new Table() instance after sorting
 
         Example:
-                T2prime := T1.sort(['R1_time', 'S_C'], 'T2prime')
+                        T2prime := T1.sort(['R1_time', 'S_C'], 'T2prime')
         """
 
         lis = [getattr(getattr(self, 't'), a) for a in args]
@@ -256,21 +269,19 @@ class Table:
         new_table = Table(name, t=new_table)
         return new_table
 
-
-
     def moving_avg_sum(self, args, name, operation='avg'):
         """ Perform moving average / sum on the table based on operation
 
         Args:
-                elements (list) :
-                                1st element: Source table Column to calculate average / sum
-                                2nd element: window size (N)
+                        elements (list) :
+                                                        1st element: Source table Column to calculate average / sum
+                                                        2nd element: window size (N)
 
         Returns:
-                new Table() instance after moving average / sum
+                        new Table() instance after moving average / sum
 
         Example:
-                T3 := T2prime.moving_avg_sum( ['R1_qty', 3],'T3', 'avg')
+                        T3 := T2prime.moving_avg_sum( ['R1_qty', 3],'T3', 'avg')
         """
 
         col, N = args
@@ -280,10 +291,8 @@ class Table:
         agg = Table.moving_agg(arr, int(N), operation)
 
         col_name = f'mov_{operation}'
+        new_table = deepcopy(self.t)
 
-        new_table = {}
-
-        new_table[col] = arr
         new_table[col_name] = agg
         new_table = Table(name, t=new_table)
         return new_table
@@ -312,15 +321,15 @@ class Table:
         Also works on array of tuples
 
         Args:
-                arr (list) : Array to sort.
+                        arr (list) : Array to sort.
 
         Returns:
-                index_array : Array of indices that sort arr
+                        index_array : Array of indices that sort arr
 
         Example:
-                x = [3,2,4,1,6]
-                >>Table.argsort(x)
-                [3, 1, 0, 2, 4]
+                        x = [3,2,4,1,6]
+                        >>Table.argsort(x)
+                        [3, 1, 0, 2, 4]
         """
         return sorted(range(len(arr)), key=arr.__getitem__)
 
@@ -352,15 +361,15 @@ class Table:
         """ Returns the operator in a string.
 
         Args:
-                s (str) : Input string.
+                        s (str) : Input string.
 
         Returns:
-                string : Operator
+                        string : Operator
 
         Example:
-                s = 'A.col1 >= B.col2'
-                >>Table.find_operator(s)
-                '>='
+                        s = 'A.col1 >= B.col2'
+                        >>Table.find_operator(s)
+                        '>='
         """
         lis = ['==', '<=', '>=', '<', '>', '!=', '=']
         for l in lis:
@@ -376,17 +385,17 @@ class Table:
     def moving_agg(x, N, operation='avg'):
         """ Calculates the moving average / sum on an array.
 
-                Args:
-                        x (list) : Input array of integers / float.
-                        N (int) : Window size
+                        Args:
+                                        x (list) : Input array of integers / float.
+                                        N (int) : Window size
 
-                Returns:
-                        list : Moving averages / sums
+                        Returns:
+                                        list : Moving averages / sums
 
-                Example:
-                        arr = [4, 8, 9, 7]
-                        >>Table.moving_agg(arr)
-                        [4,6,7,8]
+                        Example:
+                                        arr = [4, 8, 9, 7]
+                                        >>Table.moving_agg(arr)
+                                        [4,6,7,8]
         """
 
         ar = deque([])
@@ -401,51 +410,58 @@ class Table:
                 res.append(np.sum(ar))
         return res
 
-    def reduce_str(self,s):
+    def reduce_str(self, s):
+        """ Performs arithmetic operations on lhs and rhs of join condition
+
+        Args:
+                        s (str): Arithmetic operation on a table column
+
+                        Ex: 'R1.qty + 2'
+
+        Returns:
+                        arr: column after performing the arithmetic operation
+        """
         arith_op = Table.find_operator(s)
         if arith_op is None:
             return self.t[s.split('.')[1]]
         else:
-            lhs,rhs = list(map(str.strip, s.split(arith_op)))
+            lhs, rhs = list(map(str.strip, s.split(arith_op)))
             try:
                 float(rhs)
-            except:
-                lhs,rhs = rhs,lhs
+            except BaseException:
+                lhs, rhs = rhs, lhs
             arr = self.t[lhs.split('.')[1]]
 
             op_fun = Table.get_operator_fn(arith_op)
             return op_fun(arr, float(rhs))
-
 
     @classmethod
     def join(cls, name1, name2, args, bool_op, name, t1, t2):
         """ Joins two tables based on conditions
 
         Args:
-                name1 (str) : Name of table1
-                name2 (str) : Name of table2
+                        name1 (str) : Name of table1
+                        name2 (str) : Name of table2
 
-                args (str / list of str): Conditions on table columns
-                Ex: ['(R1.qty > S.Q)' , ' (R1.saleid = S.saleid)']
+                        args (str / list of str): Conditions on table columns
+                        Ex: ['(R1.qty > S.Q)' , ' (R1.saleid = S.saleid)']
 
-                bool_op (str): boolean operation separating conditions (usually and)
-                                        None if only one condition is present
+                        bool_op (str): boolean operation separating conditions (usually and)
+                                                                        None if only one condition is present
 
-                name (str): Name of output table
+                        name (str): Name of output table
 
-                t1 (Table) : table1 instance
-                t2 (Table) : table2 instance
+                        t1 (Table) : table1 instance
+                        t2 (Table) : table2 instance
 
         Returns:
-                new Table() instance after moving average / sum
+                        new Table() instance after moving join
 
         Example:
-                T1 := Table.join('R1', 'S', ['(R1.qty > S.Q)' , ' (R1.saleid = S.saleid)'] ,
-                                                                'T1', R1, S)
+                        T1 := Table.join('R1', 'S', ['(R1.qty > S.Q)' , ' (R1.saleid = S.saleid)'] ,
+                                                                                                                        'T1', R1, S)
         """
         d1, d2 = t1.t, t2.t
-
-        k1, k2 = list(d1.keys()), list(d2.keys())
 
         vars()[name1] = d1
         vars()[name2] = d2
@@ -457,25 +473,22 @@ class Table:
 
             for i, s in enumerate(args):
 
-                lhs = ''
-                rhs = ''
-
                 if cls.find_operator(s) == '=':
                     s = s.replace('=', '==')
 
                 op_str = cls.find_operator(s)
 
-                lhs,rhs = list(map(str.strip , s.split(op_str)))
+                lhs, rhs = list(map(str.strip, s.split(op_str)))
 
                 left_arr = t1.reduce_str(lhs)
                 right_arr = t2.reduce_str(rhs)
 
                 op_fun = cls.get_operator_fn(op_str)
 
-                xx,yy = np.meshgrid(left_arr, right_arr, sparse=False, indexing='ij')
+                xx, yy = np.meshgrid(
+                    left_arr, right_arr, sparse=False, indexing='ij')
 
-                ind1, ind2 = np.where(op_fun(xx,yy))
-
+                ind1, ind2 = np.where(op_fun(xx, yy))
 
                 if len(ind1) < min_len:
                     min_len = len(ind1)
@@ -516,7 +529,8 @@ class Table:
 
             op_fun = cls.get_operator_fn(op_str)
 
-            xx, yy = np.meshgrid(left_arr, right_arr, sparse=False, indexing='ij')
+            xx, yy = np.meshgrid(
+                left_arr, right_arr, sparse=False, indexing='ij')
 
             indices1, indices2 = np.where(op_fun(xx, yy))
 
@@ -530,8 +544,20 @@ class Table:
 
     @classmethod
     def concat(cls, tables, name):
+        """ Concatenates two or more tables with the same schema
 
+        Args:
+                tables (list): list of tables to concatenate
+                (should be list of dictionaries not list of table objects)
+
+                name (str):  Name of output table
+
+        Returns:
+                new Table() instance after concat
+
+        """
         try:
+            # Verifies that all tables have the same schema
             assert len(set(tuple(t.keys()) for t in tables)) == 1
 
         except AssertionError as error:
@@ -546,6 +572,30 @@ class Table:
             new_table = Table(name, t=new_table)
             return new_table
 
+    def output(self, filename):
+        """ This will output the table into a file
+                with the name as filename and with vertical bar separators
+
+        Args:
+                filename: str - name of the output file
+
+        Returns:
+                        None
+
+        """
+
+        f = open(filename, "w")
+        keys = list(self.t.keys())
+        s = '|'.join(keys) + '\n'
+        f.write(s)
+
+        n = len(self.t[keys[0]])
+
+        for i in range(n):
+            s = '|'.join([str(self.t[k][i]) for k in keys]) + '\n'
+            f.write(s)
+        f.close()
+
     def __str__(self):
         """ Called by the str() function and by the print statement
         to compute the “informal” string representation of a Table object
@@ -553,20 +603,20 @@ class Table:
         Each row has left aligned elements and rows are separated by \n newline
 
         Returns:
-                string : string representation of the object
+                        string : string representation of the object
 
         Example:
-                d = {'Name': array(['a', 'c', 'e'], dtype='<U4'),
-                 'ID': array([0, 1, 2]),
-                 'Qty': array([12, 15, 13])}
+                        d = {'Name': array(['a', 'c', 'e'], dtype='<U4'),
+                         'ID': array([0, 1, 2]),
+                         'Qty': array([12, 15, 13])}
 
-                table1 = Table(name = 'sample', t = d)
+                        table1 = Table(name = 'sample', t = d)
 
-                print(table1)
+                        print(table1)
 
-                a  0  12
-                c  1  15
-                e  2  13
+                        a  0  12
+                        c  1  15
+                        e  2  13
 
         """
         keys = list(self.t.keys())
@@ -575,8 +625,15 @@ class Table:
 
         max_size = [0] * len(keys)
         for i, k in enumerate(keys):
+            max_size[i] = max(max_size[i], len(k))
             for a in self.t[k]:
                 max_size[i] = max(max_size[i], len(str(a)))
+
+        for j, k in enumerate(keys):
+            ms = max_size[j]
+            format_str = '{:<' + str(ms + 2) + '}'
+            s += format_str.format(k)
+        s += '\n'
 
         for i in range(n):
             for j, k in enumerate(keys):

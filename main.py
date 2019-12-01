@@ -4,8 +4,12 @@ from myparser import *
 from utils import *
 from table import *
 
+net_id = 'msy290'
+query_file = 'queries.txt'
+
 
 class Solution:
+    f = open(f"{net_id}_AllOperations.txt", "w")
 
     @classmethod
     def read_line(cls, line):
@@ -18,7 +22,7 @@ class Solution:
 
                     if 'inputfromfile' in right:
                         inp_name = Parser.parse(right, 'input')
-                        setattr(cls, left, Table(left, inp_name))
+                        output = Table(left, inp_name)
 
                     elif 'select' in right:
                         base_table, args, condition = Parser.parse(
@@ -27,13 +31,11 @@ class Solution:
                         output = getattr(
                             cls, base_table).select(
                             args, condition, left)
-                        setattr(cls, left, output)
 
                     elif 'project' in right:
                         base_table, args = Parser.parse(right, 'project')
 
                         output = getattr(cls, base_table).project(args, left)
-                        setattr(cls, left, output)
 
                     elif 'avggroup' in right:
                         base_table, args = Parser.parse(right, 'project')
@@ -41,7 +43,6 @@ class Solution:
                         output = getattr(
                             cls, base_table).avg_sum_group(
                             args, left)
-                        setattr(cls, left, output)
 
                     elif 'movavg' in right:
                         base_table, args = Parser.parse(right, 'project')
@@ -55,7 +56,6 @@ class Solution:
                         base_table, args = Parser.parse(right, 'avg')
 
                         output = getattr(cls, base_table).avg_sum(args)
-                        setattr(cls, left, output)
 
                     elif 'sumgroup' in right:
                         base_table, args = Parser.parse(right, 'project')
@@ -63,7 +63,6 @@ class Solution:
                         output = getattr(
                             cls, base_table).avg_sum_group(
                             args, left, 'sum')
-                        setattr(cls, left, output)
 
                     elif 'movsum' in right:
                         base_table, args = Parser.parse(right, 'project')
@@ -71,19 +70,15 @@ class Solution:
                         output = getattr(
                             cls, base_table).moving_avg_sum(
                             args, left, 'sum')
-                        setattr(cls, left, output)
 
                     elif 'sum' in right:
                         base_table, args = Parser.parse(right, 'avg')
 
                         output = getattr(cls, base_table).avg_sum(args, sum)
-                        setattr(cls, left, output)
 
                     elif 'sort' in right:
                         base_table, args = Parser.parse(right, 'project')
-
                         output = getattr(cls, base_table).sort(args, left)
-                        setattr(cls, left, output)
 
                     elif 'join' in right:
                         name1, name2, args, condition = Parser.parse(
@@ -94,7 +89,6 @@ class Solution:
 
                         output = Table.join(
                             name1, name2, args, condition, left, table1, table2)
-                        setattr(cls, left, output)
 
                     elif 'concat' in right:
                         args = Parser.parse(right, 'concat')
@@ -104,24 +98,30 @@ class Solution:
                             tables.append(getattr(getattr(cls, a), 't'))
                         output = Table.concat(tables, left)
 
-                        setattr(cls, left, output)
+                    setattr(cls, left, output)
+
+                    cls.f.write(line + '\n')
+                    cls.f.write(str(output))
+                    cls.f.write('\n')
 
                 else:
+                    base_table, col = Parser.parse(line, 'Btree')
+                    table = getattr(cls, base_table)
                     if line.startswith('Btree'):
-                        base_table, col = Parser.parse(line, 'Btree')
-                        table = getattr(cls, base_table)
                         table.index_btree(col)
 
                     elif line.startswith('Hash'):
-                        base_table, col = Parser.parse(line, 'Btree')
-                        table = getattr(cls, base_table)
                         table.index_hash(col)
+
+                    elif line.startswith('outputtofile'):
+                        table.output(col)
 
             print(line, '\nQuery took %.06f sec.\n' % t.interval)
 
 
 if __name__ == '__main__':
-    query_file = 'queries.txt'
+
     with open(query_file, 'r') as f:
         for i, line in enumerate(f):
             Solution.read_line(line)
+    Solution.f.close()

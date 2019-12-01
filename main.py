@@ -1,7 +1,7 @@
 import os
 import sys
-from myparser import *
-from utils import *
+from myparser import Parser
+from utils import Timer
 from table import *
 
 net_id = 'msy290'

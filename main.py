@@ -1,8 +1,6 @@
-import os
-import sys
 from myparser import Parser
 from utils import Timer
-from table import *
+from table import Table
 
 net_id = 'msy290'
 query_file = 'queries.txt'

@@ -181,8 +181,8 @@ class Table:
         new_table = Table(name, t=new_table)
         return new_table
 
-    def avg_sum(self, elements, operation='avg'):
-        """ Perform average / sum on the table
+    def avg_sum_count(self, elements, operation='avg'):
+        """ Perform average / sum / count on the table
 
         Args:
                         elements (str) : Source table Column to calculate average / sum
@@ -198,12 +198,14 @@ class Table:
         arr = self.t[elements]
         if operation == 'sum':
             ans = np.sum(arr)
-        else:
+        elif operator == 'avg':
             ans = np.average(arr)
+        else:
+            ans = len(arr)
         return str(ans)
 
-    def avg_sum_group(self, args, name, operation='avg'):
-        """ Perform average / sum group on the table
+    def avg_sum_count_group(self, args, name, operation='avg'):
+        """ Perform average / sum / count group on the table
 
         Args:
                         args (str) : list of strings.
@@ -231,8 +233,10 @@ class Table:
         for k, ind in d.items():
             if operation == 'avg':
                 d[k] = np.mean(self.t[first][ind])
-            else:
+            elif operator == 'sum':
                 d[k] = np.sum(self.t[first][ind])
+            else:
+                d[k] = len(self.t[first][ind])
 
         d = OrderedDict(sorted(d.items()))
 

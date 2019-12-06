@@ -7,11 +7,16 @@ query_file = 'queries.txt'
 
 
 class Solution:
+    """
+        Stores various tables in memory as class variables
+    """
     f = open(f"{net_id}_AllOperations.txt", "w")
 
     @classmethod
     def read_line(cls, line):
-
+        """
+            Parses the string and calls the method from table class
+        """
         line = Parser.remove_comments(line)
         if line:
             with Timer() as t:
@@ -39,7 +44,7 @@ class Solution:
                         base_table, args = Parser.parse(right, 'project')
 
                         output = getattr(
-                            cls, base_table).avg_sum_group(
+                            cls, base_table).avg_sum_count_group(
                             args, left)
 
                     elif 'movavg' in right:
@@ -53,13 +58,13 @@ class Solution:
                     elif 'avg' in right:
                         base_table, args = Parser.parse(right, 'avg')
 
-                        output = getattr(cls, base_table).avg_sum(args)
+                        output = getattr(cls, base_table).avg_sum_count(args)
 
                     elif 'sumgroup' in right:
                         base_table, args = Parser.parse(right, 'project')
 
                         output = getattr(
-                            cls, base_table).avg_sum_group(
+                            cls, base_table).avg_sum_count_group(
                             args, left, 'sum')
 
                     elif 'movsum' in right:
@@ -72,7 +77,9 @@ class Solution:
                     elif 'sum' in right:
                         base_table, args = Parser.parse(right, 'avg')
 
-                        output = getattr(cls, base_table).avg_sum(args, sum)
+                        output = getattr(
+                            cls, base_table).avg_sum_count(
+                            args, 'sum')
 
                     elif 'sort' in right:
                         base_table, args = Parser.parse(right, 'project')
@@ -95,6 +102,20 @@ class Solution:
                         for a in args:
                             tables.append(getattr(getattr(cls, a), 't'))
                         output = Table.concat(tables, left)
+
+                    elif 'countgroup' in right:
+                        base_table, args = Parser.parse(right, 'project')
+
+                        output = getattr(
+                            cls, base_table).avg_sum_count_group(
+                            args, left, 'count')
+
+                    elif 'count' in right:
+                        base_table, args = Parser.parse(right, 'avg')
+
+                        output = getattr(
+                            cls, base_table).avg_sum_count(
+                            args, 'count')
 
                     setattr(cls, left, output)
 

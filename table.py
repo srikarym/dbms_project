@@ -56,7 +56,7 @@ class Table:
         try:
             float(rhs)
         except BaseException:
-            op_str = Table.get_reverse_op_str(op_str)
+            op_str = Table.get_reverse_comp_str(op_str)
             lhs, rhs = rhs, lhs
 
         keys = list(self.t.keys())
@@ -124,7 +124,7 @@ class Table:
             Ex: ['time > 50' , 'qty < 30']
 
             bool_op (str): boolean operation separating conditions (and / or)
-                                                            None if only one condition
+                            None if only one condition
 
             name (str) : Name of new table
         Returns:
@@ -381,7 +381,7 @@ class Table:
         }[op]
 
     @staticmethod
-    def get_reverse_op_str(op):
+    def get_reverse_comp_str(op):
         return {
             '>=': '<=',
             '<=': '>=',

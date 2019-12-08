@@ -5,6 +5,7 @@ A miniature relational database with order. Course project for CSCI-GA.2433-001 
 - numpy
 - BTrees
 
+Btrees implementation taken from [here](https://github.com/zopefoundation/BTrees).
 # Usage
 
 ## Inputs

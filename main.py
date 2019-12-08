@@ -2,7 +2,7 @@ from myparser import Parser
 from utils import Timer
 from table import Table
 
-net_id = 'msy290'
+net_id = 'msy290_sd3770'
 query_file = 'queries.txt'
 
 
@@ -136,9 +136,9 @@ class Solution:
 
                     setattr(cls, left, output)
 
-                    # cls.f.write(line + '\n')
-                    # cls.f.write(str(output))
-                    # cls.f.write('\n')
+                    cls.f.write(line + '\n')
+                    cls.f.write(str(output))
+                    cls.f.write('\n')
 
                 else:
                     base_table, col = Parser.parse(line, 'Btree')

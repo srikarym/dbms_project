@@ -136,9 +136,9 @@ class Solution:
 
                     setattr(cls, left, output)
 
-                    cls.f.write(line + '\n')
-                    cls.f.write(str(output))
-                    cls.f.write('\n')
+                    # cls.f.write(line + '\n')
+                    # cls.f.write(str(output))
+                    # cls.f.write('\n')
 
                 else:
                     base_table, col = Parser.parse(line, 'Btree')

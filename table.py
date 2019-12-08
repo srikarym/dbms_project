@@ -56,6 +56,7 @@ class Table:
         try:
             float(rhs)
         except BaseException:
+            op_str = Table.get_reverse_op_str(op_str)
             lhs, rhs = rhs, lhs
 
         keys = list(self.t.keys())
@@ -133,7 +134,7 @@ class Table:
             R1 = R.select( ['time > 50' , 'qty < 30'], 'or', 'R1')
         """
         if bool_op:
-            conditions = ['self.t.' + arg for arg in conditions]
+            # conditions = ['self.t.' + arg for arg in conditions]
             indices = []
             for a in conditions:
                 if Table.find_operator(a) == '=':
@@ -152,7 +153,7 @@ class Table:
             if Table.find_operator(conditions) == '=':
                 conditions = conditions.replace('=', '==')
 
-            conditions = 'self.t.' + conditions
+            # conditions = 'self.t.' + conditions
             indices = self.get_select_indices(conditions)
             # indices = eval(f'np.where({conditions})')
 
@@ -378,6 +379,17 @@ class Table:
             '/': operator.mul,
             '*': operator.itruediv,
         }[op]
+
+    @staticmethod
+    def get_reverse_op_str(op):
+        return {
+            '>=': '<=',
+            '<=': '>=',
+            '>': '<',
+            '<': '>',
+            '==': '==',
+            '!=': '!='
+        }.get(op, op)
 
     @staticmethod
     def find_operator(s):

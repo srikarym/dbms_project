@@ -49,7 +49,6 @@ class Table:
         Returns:
             arr: indices of column which satisfy the condition
         """
-
         op_str = Table.find_operator(s)
         lhs, rhs = list(map(str.strip, s.split(op_str)))
 
@@ -69,8 +68,9 @@ class Table:
                 break
 
         arith_op = Table.find_operator(lhs)
+
         if arith_op is not None:
-            _, n = lhs.split(arith_op)
+            lhs, n = lhs.split(arith_op)
             rev_op = Table.get_reverse_op(arith_op)
             rhs = float(rev_op(float(rhs), float(n)))
         else:
@@ -78,42 +78,26 @@ class Table:
 
         col = self.t[col_str]
         if col_str not in self.btrees and col_str not in self.hashtables:
-            main_op = Table.get_operator_fn(op_str)
+            rel_op = Table.get_operator_fn(op_str)
 
             ind = []
             for i, n in enumerate(col):
-                if main_op(n, rhs):
+                if rel_op(n, rhs):
                     ind.append(i)
             return ind
-
-        elif col_str in self.btrees:
-            bt = self.btrees[col_str]
-            ind = []
-            min_key = bt.minKey()
-
-            if op_str == '==':
-                return bt[rhs]
-
-            elif op_str == '>':
-                ind = bt.values(rhs + 1e-10)
-            elif op_str == '>=':
-                ind = bt.values(rhs)
-            elif op_str == '<':
-                ind = bt.values(min_key, rhs - 1e-10)
-            elif op_str == '<=':
-                ind = bt.values(min_key, rhs)
-            elif op_str == '!=':
-                ind = [bt[k] for k in (list(bt.keys())) if k != rhs]
-
-            return np.concatenate(ind)
         else:
-            ht = self.hashtables[col_str]
+            if col_str in self.btrees:
+                ds = self.btrees[col_str]
+            else:
+                ds = self.hashtables[col_str]
 
             if op_str == '==':
-                return ht[rhs]
+                return ds[rhs]
+
             else:
-                main_op = Table.get_operator_fn(op_str)
-                ind = [v for k, v in ht.items() if main_op(k, rhs)]
+                rel_op = Table.get_operator_fn(op_str)
+                ind = [v for k, v in ds.items() if rel_op(k, rhs)]
+
             return np.concatenate(ind)
 
     def select(self, conditions, bool_op, name):
@@ -518,12 +502,12 @@ class Table:
                 left_arr = t1.reduce_str(lhs)
                 right_arr = t2.reduce_str(rhs)
 
-                op_fun = cls.get_operator_fn(op_str)
+                rel_op = cls.get_operator_fn(op_str)
 
                 xx, yy = np.meshgrid(
                     left_arr, right_arr, sparse=False, indexing='ij')
 
-                ind1, ind2 = np.where(op_fun(xx, yy))
+                ind1, ind2 = np.where(rel_op(xx, yy))
 
                 if len(ind1) < min_len:
                     min_len = len(ind1)
@@ -538,12 +522,12 @@ class Table:
                     left_arr = t1.reduce_str(lhs)
                     right_arr = t2.reduce_str(rhs)
 
-                    op_fun = cls.get_operator_fn(op_str)
+                    rel_op = cls.get_operator_fn(op_str)
 
                     ind1 = []
                     ind2 = []
                     for m, n in zip(*min_lis):
-                        if op_fun(left_arr[m], right_arr[n]):
+                        if rel_op(left_arr[m], right_arr[n]):
                             ind1.append(m)
                             ind2.append(n)
                     min_lis = [ind1, ind2]
@@ -562,12 +546,12 @@ class Table:
             left_arr = t1.reduce_str(lhs)
             right_arr = t2.reduce_str(rhs)
 
-            op_fun = cls.get_operator_fn(op_str)
+            rel_op = cls.get_operator_fn(op_str)
 
             xx, yy = np.meshgrid(
                 left_arr, right_arr, sparse=False, indexing='ij')
 
-            indices1, indices2 = np.where(op_fun(xx, yy))
+            indices1, indices2 = np.where(rel_op(xx, yy))
 
         d1 = {f'{name1}_{k}': v[indices1] for k, v in d1.items()}
         d2 = {f'{name2}_{k}': v[indices2] for k, v in d2.items()}
@@ -612,7 +596,7 @@ class Table:
             with the name as filename and with vertical bar separators
 
         Args:
-            filename: str - name of the output file
+            filename: str - name of the output file without .txt
 
         Returns:
             None

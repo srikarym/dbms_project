@@ -6,6 +6,22 @@ net_id = 'msy290'
 query_file = 'queries.txt'
 
 
+def safe_run(func):
+    """
+        Decorator that handles errors
+    """
+    def func_wrapper(*args, **kwargs):
+
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+
+            print(e)
+            return None
+
+    return func_wrapper
+
+
 class Solution:
     """
         Stores various tables in memory as class variables
@@ -13,6 +29,7 @@ class Solution:
     f = open(f"{net_id}_AllOperations.txt", "w")
 
     @classmethod
+    @safe_run
     def read_line(cls, line):
         """
             Parses the string and calls the method from table class

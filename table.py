@@ -9,7 +9,8 @@ from copy import deepcopy
 
 class Table:
     """Table.
-    Base class for a table. Contains various methods which are queries that can be done on the table
+    Base class for a table.
+    Contains various methods which are queries that can be done on the table
     """
 
     def __init__(self, table_name, file_name=None, t=None):
@@ -17,13 +18,13 @@ class Table:
         Used to create a new table instance.
 
         Args:
-                        table_name (str): Name of the table
-                        file_name(str): Create a table from input text file by passing file name
-                        t (dict): Can also be created from an existing dictionary by passing as argument t
-                        s (str): Input string
+            table_name (str): Name of the table
+            file_name(str): Create a table from input text file by passing file name
+            t (dict): Can also be created from an existing dictionary by passing as argument t
+            s (str): Input string
 
         Returns:
-                        Table() instance
+            Table() instance
         """
         self.name = table_name
 
@@ -38,15 +39,15 @@ class Table:
 
     def get_select_indices(self, s):
         """ Returns indices of a column based on a condition
-                Uses btree / hash indexing if available
+            Uses btree / hash indexing if available
 
         Args:
-                s (str): Condition on a table column
+            s (str): Condition on a table column
 
-                Ex: 'qty < 30'
+            Ex: 'qty < 30'
 
         Returns:
-                        arr: indices of column which satisfy the condition
+            arr: indices of column which satisfy the condition
         """
 
         op_str = Table.find_operator(s)
@@ -118,18 +119,18 @@ class Table:
         """Perform select operation on the table
 
         Args:
-                        conditions (str / list of str) : conditions to select
-                        Ex: ['time > 50' , 'qty < 30']
+            conditions (str / list of str) : conditions to select
+            Ex: ['time > 50' , 'qty < 30']
 
-                        bool_op (str): boolean operation separating conditions (and / or)
-                                                                        None if only one condition
+            bool_op (str): boolean operation separating conditions (and / or)
+                                                            None if only one condition
 
-                        name (str) : Name of new table
+            name (str) : Name of new table
         Returns:
-                        new Table() instance after select
+            new Table() instance after select
 
         Example:
-                        R1 = R.select( ['time > 50' , 'qty < 30'], 'or', 'R1')
+            R1 = R.select( ['time > 50' , 'qty < 30'], 'or', 'R1')
         """
         if bool_op:
             conditions = ['self.t.' + arg for arg in conditions]
@@ -165,15 +166,15 @@ class Table:
         """ Perform project operation on the table
 
         Args:
-                        elements (str / list of str) : Columns to project from source table
-                        Ex: ['saleid', 'qty', 'pricerange']
+            elements (str / list of str) : Columns to project from source table
+            Ex: ['saleid', 'qty', 'pricerange']
 
-                        name (str) : Name of new table
+            name (str) : Name of new table
         Returns:
-                        new Table() instance after project
+            new Table() instance after project
 
         Example:
-                        R2 := R1.project( ['saleid', 'qty', 'pricerange'], 'R2')
+            R2 := R1.project( ['saleid', 'qty', 'pricerange'], 'R2')
         """
         new_table = {k: self.t[k] for k in elements}
         new_table = AttrDict(new_table)
@@ -185,14 +186,14 @@ class Table:
         """ Perform average / sum / count on the table
 
         Args:
-                        elements (str) : Source table Column to calculate average / sum
-                        Ex: 'qty'
+            elements (str) : Source table Column to calculate average / sum
+            Ex: 'qty'
 
         Returns:
-                        Float - average / sum
+            Float - average / sum
 
         Example:
-                        R3 = R1.avg('qty')
+            R3 = R1.avg('qty')
         """
 
         arr = self.t[elements]
@@ -208,17 +209,17 @@ class Table:
         """ Perform average / sum / count group on the table
 
         Args:
-                        args (str) : list of strings.
-                                                                        1st element - source table Column to calculate average / sum
-                                                                        rest of the list - columns to group by
+            args (str) : list of strings.
+                1st element - source table Column to calculate average / sum
+                rest of the list - columns to group by
 
-                        Ex: ['qty','time','percentage']
-                        name (str) : Name of new table
+            Ex: ['qty','time','percentage']
+            name (str) : Name of new table
         Returns:
-                        new Table() instance after avg/sum group
+            new Table() instance after avg/sum group
 
         Example:
-                        R5 := R1.avg_sum_group( ['qty','time','percentage'] , 'R5','sum')
+            R5 := R1.avg_sum_group( ['qty','time','percentage'] , 'R5','sum')
         """
 
         first, *rest = args
@@ -254,14 +255,14 @@ class Table:
         """ Sort a table by columns
 
         Args:
-                        args (str) : list of strings to sort by
-                        Ex: ['R1_time', 'S_C']
-                        name (str) : Name of new table
+            args (str) : list of strings to sort by
+            Ex: ['R1_time', 'S_C']
+            name (str) : Name of new table
         Returns:
-                        new Table() instance after sorting
+            new Table() instance after sorting
 
         Example:
-                        T2prime := T1.sort(['R1_time', 'S_C'], 'T2prime')
+            T2prime := T1.sort(['R1_time', 'S_C'], 'T2prime')
         """
 
         lis = [getattr(getattr(self, 't'), a) for a in args]
@@ -277,15 +278,15 @@ class Table:
         """ Perform moving average / sum on the table based on operation
 
         Args:
-                        elements (list) :
-                                                        1st element: Source table Column to calculate average / sum
-                                                        2nd element: window size (N)
+            elements (list) :
+                1st element: Source table Column to calculate average / sum
+                2nd element: window size (N)
 
         Returns:
-                        new Table() instance after moving average / sum
+            new Table() instance after moving average / sum
 
         Example:
-                        T3 := T2prime.moving_avg_sum( ['R1_qty', 3],'T3', 'avg')
+            T3 := T2prime.moving_avg_sum( ['R1_qty', 3],'T3', 'avg')
         """
 
         col, N = args
@@ -302,6 +303,15 @@ class Table:
         return new_table
 
     def index_btree(self, col_name):
+        """ Creates a btree on the table based on column
+
+        Args:
+            col_name (str) : name of column to use
+            Ex: ['qty']
+
+        Example:
+            T1.index_btree('S_C')
+        """
         col = self.t[col_name]
         unique = defaultdict(list)
 
@@ -312,6 +322,15 @@ class Table:
         self.btrees[col_name] = bt
 
     def index_hash(self, col_name):
+        """ Creates a hash table on the table based on column
+
+        Args:
+            col_name (str) : name of column to use
+            Ex: ['qty']
+
+        Example:
+            T1.index_hash('S_C')
+        """
         col = self.t[col_name]
         unique = defaultdict(list)
         for i, n in enumerate(col):
@@ -325,15 +344,15 @@ class Table:
         Also works on array of tuples
 
         Args:
-                        arr (list) : Array to sort.
+            arr (list) : Array to sort.
 
         Returns:
-                        index_array : Array of indices that sort arr
+            index_array : Array of indices that sort arr
 
         Example:
-                        x = [3,2,4,1,6]
-                        >>Table.argsort(x)
-                        [3, 1, 0, 2, 4]
+            x = [3,2,4,1,6]
+            >>Table.argsort(x)
+            [3, 1, 0, 2, 4]
         """
         return sorted(range(len(arr)), key=arr.__getitem__)
 
@@ -365,15 +384,15 @@ class Table:
         """ Returns the operator in a string.
 
         Args:
-                        s (str) : Input string.
+            s (str) : Input string.
 
         Returns:
-                        string : Operator
+            string : Operator
 
         Example:
-                        s = 'A.col1 >= B.col2'
-                        >>Table.find_operator(s)
-                        '>='
+            s = 'A.col1 >= B.col2'
+            >>Table.find_operator(s)
+            '>='
         """
         lis = ['==', '<=', '>=', '<', '>', '!=', '=']
         for l in lis:
@@ -389,17 +408,17 @@ class Table:
     def moving_agg(x, N, operation='avg'):
         """ Calculates the moving average / sum on an array.
 
-                        Args:
-                                        x (list) : Input array of integers / float.
-                                        N (int) : Window size
+        Args:
+            x (list) : Input array of integers / float.
+            N (int) : Window size
 
-                        Returns:
-                                        list : Moving averages / sums
+        Returns:
+            list : Moving averages / sums
 
-                        Example:
-                                        arr = [4, 8, 9, 7]
-                                        >>Table.moving_agg(arr)
-                                        [4,6,7,8]
+        Example:
+            arr = [4, 8, 9, 7]
+            >>Table.moving_agg(arr)
+            [4,6,7,8]
         """
 
         ar = deque([])
@@ -418,12 +437,12 @@ class Table:
         """ Performs arithmetic operations on lhs and rhs of join condition
 
         Args:
-                        s (str): Arithmetic operation on a table column
+            s (str): Arithmetic operation on a table column
 
-                        Ex: 'R1.qty + 2'
+            Ex: 'R1.qty + 2'
 
         Returns:
-                        arr: column after performing the arithmetic operation
+            arr: column after performing the arithmetic operation
         """
         arith_op = Table.find_operator(s)
         if arith_op is None:
@@ -444,26 +463,26 @@ class Table:
         """ Joins two tables based on conditions
 
         Args:
-                        name1 (str) : Name of table1
-                        name2 (str) : Name of table2
+            name1 (str) : Name of table1
+            name2 (str) : Name of table2
 
-                        args (str / list of str): Conditions on table columns
-                        Ex: ['(R1.qty > S.Q)' , ' (R1.saleid = S.saleid)']
+            args (str / list of str): Conditions on table columns
+            Ex: ['(R1.qty > S.Q)' , ' (R1.saleid = S.saleid)']
 
-                        bool_op (str): boolean operation separating conditions (usually and)
-                                                                        None if only one condition is present
+            bool_op (str): boolean operation separating conditions (usually and)
+                            None if only one condition is present
 
-                        name (str): Name of output table
+            name (str): Name of output table
 
-                        t1 (Table) : table1 instance
-                        t2 (Table) : table2 instance
+            t1 (Table) : table1 instance
+            t2 (Table) : table2 instance
 
         Returns:
-                        new Table() instance after moving join
+            new Table() instance after moving join
 
         Example:
-                        T1 := Table.join('R1', 'S', ['(R1.qty > S.Q)' , ' (R1.saleid = S.saleid)'] ,
-                                                                                                                        'T1', R1, S)
+            T1 := Table.join('R1', 'S', ['(R1.qty > S.Q)' , ' (R1.saleid = S.saleid)'] ,
+                                'T1', R1, S)
         """
         d1, d2 = t1.t, t2.t
 
@@ -551,13 +570,13 @@ class Table:
         """ Concatenates two or more tables with the same schema
 
         Args:
-                tables (list): list of tables to concatenate
-                (should be list of dictionaries not list of table objects)
+            tables (list): list of tables to concatenate
+            (should be list of dictionaries not list of table objects)
 
-                name (str):  Name of output table
+            name (str):  Name of output table
 
         Returns:
-                new Table() instance after concat
+            new Table() instance after concat
 
         """
         try:
@@ -578,13 +597,13 @@ class Table:
 
     def output(self, filename):
         """ This will output the table into a file
-                with the name as filename and with vertical bar separators
+            with the name as filename and with vertical bar separators
 
         Args:
-                filename: str - name of the output file
+            filename: str - name of the output file
 
         Returns:
-                        None
+            None
 
         """
 
@@ -607,20 +626,20 @@ class Table:
         Each row has left aligned elements and rows are separated by \n newline
 
         Returns:
-                        string : string representation of the object
+            string : string representation of the object
 
         Example:
-                        d = {'Name': array(['a', 'c', 'e'], dtype='<U4'),
-                         'ID': array([0, 1, 2]),
-                         'Qty': array([12, 15, 13])}
+            d = {'Name': array(['a', 'c', 'e'], dtype='<U4'),
+             'ID': array([0, 1, 2]),
+             'Qty': array([12, 15, 13])}
 
-                        table1 = Table(name = 'sample', t = d)
+            table1 = Table(name = 'sample', t = d)
 
-                        print(table1)
+            print(table1)
 
-                        a  0  12
-                        c  1  15
-                        e  2  13
+            a  0  12
+            c  1  15
+            e  2  13
 
         """
         keys = list(self.t.keys())

@@ -619,7 +619,7 @@ class Table:
 
         """
 
-        f = open(filename, "w")
+        f = open(filename+'.txt', "w")
         keys = list(self.t.keys())
         s = '|'.join(keys) + '\n'
         f.write(s)
